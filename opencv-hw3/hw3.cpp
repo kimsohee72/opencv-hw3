@@ -4,11 +4,11 @@ using namespace cv;
 using namespace std;
 
 Mat G_filtering(Mat image, int n,int row, int col) {
-    unsigned char* pData = (unsigned char*)image.data;
+    unsigned char* pData = (unsigned char*)image.data; //받아온 이미지의 정보를 읽을 수 있도록 저장하는 공간
     int size = 2 * n + 1;
     int l = 0,c=0;
-    int* count = new int[image.cols]();
-    Mat filter(2*n+1, 2 * n + 1, CV_8UC1, Scalar(0));
+    int* count = new int[image.cols](); //값이 있는 값의 위치 정보를 담을 공간
+    Mat filter(2*n+1, 2 * n + 1, CV_8UC1, Scalar(0)); //filtering하여 반환할 Mat
 
     for (int k = -n; k <= n; k++) {
         if (row + k >= 0 && row + k < image.cols) {
@@ -16,7 +16,7 @@ Mat G_filtering(Mat image, int n,int row, int col) {
             l++;
         }
     }
-
+    
     
     for (int k = -n; k <= n; k++) {
         if (col + k >= 0 && col + k < image.rows) {
@@ -63,7 +63,7 @@ Mat RGB_filtering(Mat image, int n, int row, int col) {
     int size = 2 * n + 1;
     int l = 0, c = 0;
     int* count = new int[image.rows]();
-    Mat filter(2 * n + 1, 2 * n + 1, CV_8UC3, Scalar(0));
+    Mat filter(2 * n + 1, 2 * n + 1, CV_8UC3, Scalar(0)); //gray와 다르게 CV_8UC3로 만들어 줍니다
 
     for (int k = -n; k <= n; k++) {
         if (row + k >= 0 && row + k < image.cols) {
@@ -143,12 +143,12 @@ Mat G_Moving_average(Mat G_image,int n) {
     int size = (2 * n + 1) * (2 * n + 1);
     for (int i = 0; i < G_image.rows; i++) {
         for (int j = 0; j < G_image.cols; j++) {
-            filter = G_filtering(G_image, n, j, i);
+            filter = G_filtering(G_image, n, j, i);//필터링 한 3x3값의 Mat을 받아옵니다.
             int sum = 0;
             for (int k = 0; k < size; k++) {
-                sum += filter.data[k];
+                sum += filter.data[k]; //모든 값을 더해줍니다.
             }
-            average_image.data[i * G_image.cols + j] = sum / size;
+            average_image.data[i * G_image.cols + j] = sum / size;//평균을 구해 average_image에 넣어줍니다.
         }
     }
     imshow("Gray Moving Average image", average_image);
@@ -168,16 +168,17 @@ Mat RGB_Moving_average(Mat image, int n) {
             int g_sum = 0;
             for (int k = 0; k < size * 3; k++) {
                 if (k % 3 == 0) {
-                    b_sum += (int)filter.data[k];
+                    b_sum += (int)filter.data[k]; //Blue에 대한 색정보를 모두 더합니다
                 }
                 else if (k % 3 == 1) {
-                    g_sum += (int)filter.data[k];
+                    g_sum += (int)filter.data[k]; //Green에 대한 색정보를 모두 더합니다
                 }
                 else if (k % 3 == 2) {
-                    r_sum += (int)filter.data[k];
+                    r_sum += (int)filter.data[k]; //Red에 대한 색정보를 모두 더합니다
                 }
             }
             
+            //각각의 평균을 구합니다.
             average_image.data[i * image.cols *3 + j*3] = b_sum / (size);
             average_image.data[i * image.cols * 3 + j * 3 +1] = g_sum / (size );
             average_image.data[i * image.cols * 3 + j * 3 +2] = r_sum / (size );
@@ -196,10 +197,14 @@ Mat G_Laplacian(Mat G_image, int n) {
     for (int i = 0; i < G_image.rows; i++) {
         for (int j = 0; j < G_image.cols; j++) {
             filter = G_filtering(G_image, n, j, i);  
-            int lap= (int)filter.data[1] + (int)filter.data[3] + (int)filter.data[5] + (int)filter.data[7] - (4 * (int)filter.data[4]);
+            int lap= (int)filter.data[1] + (int)filter.data[3] + (int)filter.data[5] + (int)filter.data[7] - (4 * (int)filter.data[4]); 
+            //1,3,5,7값에는 1을 곱하여 더하고 4번째 픽셀 값에는 -4를 곱하여 더해줍니다
           
             if (lap < 0) {
-                laplacian_image.data[i * G_image.cols + j] = 0;
+                laplacian_image.data[i * G_image.cols + j] = 0; //0보다 작은 경우 0을 넣어줍니다.
+            }
+            else if (lap >255) {
+                laplacian_image.data[i * G_image.cols + j] = 255; //255보다 큰 경우 255를 넣어줍니다.
             }
             else {
                 laplacian_image.data[i * G_image.cols + j] = lap;
@@ -248,17 +253,26 @@ Mat RGB_Laplacian(Mat image, int n) {
             if (b < 0) {
                 laplacian_image.data[i * image.cols * 3 + j * 3] = 0;
             }
+            else if (b > 255) {
+                laplacian_image.data[i * image.cols * 3 + j * 3] = 255;
+            }
             else {
                 laplacian_image.data[i * image.cols * 3 + j * 3] = b;
             }
             if (g < 0) {
                 laplacian_image.data[i * image.cols * 3 + j * 3+1] = 0;
             }
+            else if (g > 255) {
+                laplacian_image.data[i * image.cols * 3 + j * 3+1] = 255;
+            }
             else {
                 laplacian_image.data[i * image.cols * 3 + j * 3+1] = g;
             }
             if (r < 0) {
                 laplacian_image.data[i * image.cols * 3 + j * 3+2] = 0;
+            }
+            else if (r > 255) {
+                laplacian_image.data[i * image.cols * 3 + j * 3+2] = 255;
             }
             else {
                 laplacian_image.data[i * image.cols * 3 + j * 3+2] = r;
@@ -310,7 +324,7 @@ Mat RGB_Sharpening(Mat image, int n) {
     Mat b_data(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
     Mat r_data(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
     Mat g_data(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
-    int* sharpening = new int[3]();
+    int* sharpening = new int[3](); //RGB의 값을 각각 넣을 공간
     int x = 0, y = 0, z = 0;
 
     for (int i = 0; i < image.rows; i++) {
