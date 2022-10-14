@@ -9,66 +9,7 @@ Mat G_filtering(Mat image, int n,int row, int col) {
     int l = 0,c=0;
     int* count = new int[image.cols]();
     Mat filter(2*n+1, 2 * n + 1, CV_8UC1, Scalar(0));
-    /*for (int i = 0; i < image.rows; i++) {
-        for (int j = 0; j < image.cols; j++) {
-            for (int k = -n; k <= n; k++) {
-                if (i + k >= 0 && i + k < image.rows) {
-                    count[l]=k;
-                    l++;
-                }
-            }
-            for (int k = -n; k <= n; k++) {
-                if (j + k >= 0 && j + k < image.cols) {
-                    for (int h = 0; h < l; h++) {
-                        filter[i * image.rows + j] += pData[i + image.rows * k + count[h] + 3 * j];
-                    }
-                }
-            }
-            filter[i * image.rows + j] /= size * size;
-        }
-    }*/
-    /*for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            l = 0;
-            for (int k = -1; k <= 1; k++) {
-                if (i + k >= 0 && i + k < 3) {
-                    count[l] = k;
-                    l++;
-                }
-            }
-            for (int k = -1; k <= 1; k++) {
-                if (j + k >= 0 && j + k < 3) {
-                    if (l < 3 && i - count[0] - 1 >= 0) {
-                        for (int h = 0; h < l; h++) {
-                            cout << (int)(i + 3 * k + count[h] + 3 * j) << " ";
-                        }
-                        for (int h = 0; h < 3 - l; h++) {
-                            cout << "a ";
-                        }
-                    }
-                    else if(l < 3 && i - count[0] - 1 < 0) {
-                        for (int h = 0; h < 3 - l; h++) {
-                            cout << "a ";
-                        }
-                        for (int h = 0; h < l; h++) {
-                            cout << (int)(i + 3 * k + count[h] + 3 * j) << " ";
-                        }
-                    }
-                    else {
-                        for (int h = 0; h < l; h++) {
-                            cout << (int)(i + 3 * k + count[h] + 3 * j) << " ";
-                        }
-                    }
-                }
-                else {
-                    for (int p = 0; p < 3; p++) {
-                        cout << "a ";
-                    }
-                }
-            }
-            cout << "\n";
-        }
-    }*/
+
     for (int k = -n; k <= n; k++) {
         if (row + k >= 0 && row + k < image.cols) {
             count[l] = k;
@@ -207,14 +148,10 @@ Mat G_Moving_average(Mat G_image,int n) {
             for (int k = 0; k < size; k++) {
                 sum += filter.data[k];
             }
-
             average_image.data[i * G_image.cols + j] = sum / size;
-
-
         }
-        cout << "\n";
     }
-    imshow("moving average image", average_image);
+    imshow("Gray Moving Average image", average_image);
 
     return average_image;
 }
@@ -247,13 +184,13 @@ Mat RGB_Moving_average(Mat image, int n) {
 
         }
     }
-    imshow("rgb moving average image", average_image);
+    imshow("RGB Moving Average image", average_image);
 
     return average_image;
 }
 
 Mat G_Laplacian(Mat G_image, int n) {
-    Mat lapician_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
+    Mat laplacian_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
     Mat filter(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
     int size = (2 * n + 1) * (2 * n + 1);
     for (int i = 0; i < G_image.rows; i++) {
@@ -262,18 +199,18 @@ Mat G_Laplacian(Mat G_image, int n) {
             int lap= (int)filter.data[1] + (int)filter.data[3] + (int)filter.data[5] + (int)filter.data[7] - (4 * (int)filter.data[4]);
           
             if (lap < 0) {
-                lapician_image.data[i * G_image.cols + j] = 0;
+                laplacian_image.data[i * G_image.cols + j] = 0;
             }
             else {
-                lapician_image.data[i * G_image.cols + j] = lap;
+                laplacian_image.data[i * G_image.cols + j] = lap;
             }
 
         }
       
     }
-    imshow("Gray Lapician image", lapician_image);
+    imshow("Gray Laplacian image", laplacian_image);
 
-    return lapician_image;
+    return laplacian_image;
 }
 
 
@@ -332,7 +269,7 @@ Mat RGB_Laplacian(Mat image, int n) {
 
         }
     }
-    imshow("Laplacian image", laplacian_image);
+    imshow("RGB Laplacian image", laplacian_image);
 
     return laplacian_image;
 }
@@ -344,10 +281,7 @@ Mat G_Sharpening(Mat G_image, int n) {
     for (int i = 0; i < G_image.rows; i++) {
         for (int j = 0; j < G_image.cols; j++) {
             filter = G_filtering(G_image, n, j, i);
-            /* for (int k = 0; k < size; k++) {
-                 cout << (int)filter.data[k] << " ";
-             }*/
-
+          
             int lap = (int)filter.data[0] + (int)filter.data[1] + (int)filter.data[2] + (int)filter.data[3] + (int)filter.data[5] + (int)filter.data[6] + (int)filter.data[7] + (int)filter.data[8];
             int sum = -lap + (9 * (int)filter.data[4]);
 
@@ -464,24 +398,50 @@ int main() {
     Mat RGB_average_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
     Mat filter(3, 3, CV_8UC1, Scalar(0));
     
-    cout << "원하는 작업을 선택해 주세요 1.3x3 Moving_Average 2.Laplapician 3.Sharpening Filter" << "\n";
-    /*int n;
+    cout << "원하는 작업을 선택해 주세요 1.3x3 Moving_Average 2.Laplapician 3.Sharpening Filter 4.all" << "\n";
+    int n;
     cin >> n;
     switch (n) {
     case 1:
-        G_Moving_average(G_image, n);
-        RGB_Moving_average(image, n);
-    }*/
+        G_Moving_average(G_image, 1);
+        RGB_Moving_average(image, 1);
+        moveWindow("Gray Moving Average image", 400, 500);
+        moveWindow("RGB Moving Average image",400, 100);
+        break;
+    case 2:
+        G_Laplacian(G_image, 1);
+        RGB_Laplacian(image, 1);
+        moveWindow("Gray Laplacian image", 400, 500);
+        moveWindow("RGB Laplacian image", 400, 100);
+        break;
+    case 3:
+        G_Sharpening(G_image, 1);
+        RGB_Sharpening(image, 1);
+        moveWindow("Gray Sharpening image", 400, 500);
+        moveWindow("RGB Sharpening image", 400, 100);
+        break;
+    case 4:
+        G_Moving_average(G_image, 1);
+        RGB_Moving_average(image, 1);
+        RGB_Laplacian(image, 1);
+        G_Laplacian(G_image, 1);
+        G_Sharpening(G_image, 1);
+        RGB_Sharpening(image, 1);
+        moveWindow("Gray Moving Average image", 400, 500);
+        moveWindow("RGB Moving Average image", 400, 100);
+        moveWindow("Gray Laplacian image", 700, 500);
+        moveWindow("RGB Laplacian image", 700, 100);
+        moveWindow("Gray Sharpening image", 1000, 500);
+        moveWindow("RGB Sharpening image", 1000, 100);
+        break;
+    }
     
-    /*G_Moving_average(G_image, n);
-    RGB_Moving_average(image, n);*/
-    RGB_Laplacian(image, 1);
-    G_Laplacian(G_image, 1);
-    G_Sharpening(G_image, 1);
-    RGB_Sharpening(image, 1);
+    
 
     imshow("image", image);
     imshow("Gray image", G_image);
+    moveWindow("image", 100, 100);
+    moveWindow("Gray image", 100, 500);
 
     waitKey(0);
     return 0;
