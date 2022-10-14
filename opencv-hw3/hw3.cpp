@@ -259,10 +259,6 @@ Mat G_Laplacian(Mat G_image, int n) {
     for (int i = 0; i < G_image.rows; i++) {
         for (int j = 0; j < G_image.cols; j++) {
             filter = G_filtering(G_image, n, j, i);  
-           /* for (int k = 0; k < size; k++) {
-                cout << (int)filter.data[k] << " ";
-            }*/
-    
             int lap= (int)filter.data[1] + (int)filter.data[3] + (int)filter.data[5] + (int)filter.data[7] - (4 * (int)filter.data[4]);
           
             if (lap < 0) {
@@ -279,6 +275,7 @@ Mat G_Laplacian(Mat G_image, int n) {
 
     return lapician_image;
 }
+
 
 Mat RGB_Laplacian(Mat image, int n) {
     Mat laplacian_image(image.rows, image.cols, CV_8UC3, Scalar(0));
@@ -342,33 +339,116 @@ Mat RGB_Laplacian(Mat image, int n) {
 
 Mat G_Sharpening(Mat G_image, int n) {
     Mat sharpening_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
-    Mat bluring_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
-    bluring_image=G_Laplacian(G_image, 1);
-    int c=0;
+    Mat filter(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
+    int size = (2 * n + 1) * (2 * n + 1);
     for (int i = 0; i < G_image.rows; i++) {
         for (int j = 0; j < G_image.cols; j++) {
-            sharpening_image.data[i * G_image.cols + j] = -((int)bluring_image.data[i * G_image.cols + j]/4)+(int)G_image.data[i * G_image.cols + j];
+            filter = G_filtering(G_image, n, j, i);
+            /* for (int k = 0; k < size; k++) {
+                 cout << (int)filter.data[k] << " ";
+             }*/
+
+            int lap = (int)filter.data[0] + (int)filter.data[1] + (int)filter.data[2] + (int)filter.data[3] + (int)filter.data[5] + (int)filter.data[6] + (int)filter.data[7] + (int)filter.data[8];
+            int sum = -lap + (9 * (int)filter.data[4]);
+
+            if (sum < 0) {
+                sharpening_image.data[i * G_image.cols + j] = 0;
+            }
+            else if (sum > 255) {
+                sharpening_image.data[i * G_image.cols + j] = 255;
+            }
+            else {
+                sharpening_image.data[i * G_image.cols + j] = sum;
+            }
+
         }
 
     }
-    imshow("Gray Sharpning image", sharpening_image);
+    imshow("Gray Sharpening image", sharpening_image);
 
     return sharpening_image;
 }
 
 Mat RGB_Sharpening(Mat image, int n) {
     Mat sharpening_image(image.rows, image.cols, CV_8UC3, Scalar(0));
-    Mat bluring_image(image.rows, image.cols, CV_8UC3, Scalar(0));
-    bluring_image = RGB_Laplacian(image, 1);
+    Mat filter(2 * n + 1, 2 * n + 1, CV_8UC3, Scalar(0));
+    int size = (2 * n + 1) * (2 * n + 1);
+    Mat b_data(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
+    Mat r_data(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
+    Mat g_data(2 * n + 1, 2 * n + 1, CV_8UC1, Scalar(0));
+    int* sharpening = new int[3]();
+    int x = 0, y = 0, z = 0;
 
     for (int i = 0; i < image.rows; i++) {
         for (int j = 0; j < image.cols; j++) {
-            sharpening_image.data[i * image.cols * 3 + j * 3] =
-                -( (int)bluring_image.data[i * image.cols * 3 + j * 3]/4) + (int)image.data[i * image.cols * 3 + j * 3];
-            sharpening_image.data[i * image.cols * 3 + j * 3 + 1] =
-                -( (int)bluring_image.data[i * image.cols * 3 + j * 3 + 1]/4) + (int)image.data[i * image.cols * 3 + j * 3 + 1];
-            sharpening_image.data[i * image.cols * 3 + j * 3 + 2] =
-               -( (int)bluring_image.data[i * image.cols * 3 + j * 3 + 2]/4) + (int)image.data[i * image.cols * 3 + j * 3 + 2];
+            filter = RGB_filtering(image, n, j, i);
+            
+            for (int k = 0; k < size * 3; k++) {
+                if (k % 3 == 0) {
+                    b_data.data[x] = (int)filter.data[k];
+                    x++;
+                }
+                else if (k % 3 == 1) {
+                    g_data.data[y] = (int)filter.data[k];
+                    y++;
+                }
+                else if (k % 3 == 2) {
+                    r_data.data[z] = (int)filter.data[k];
+                    z++;
+                }
+            }
+            sharpening[0] = 0;
+            sharpening[1] = 0;
+            sharpening[2] = 0;
+            
+            for (int m = 0; m < 9; m++) {
+                if (m != 4) {
+                    sharpening[0] -= (int)b_data.data[m];
+                    sharpening[1] -= (int)g_data.data[m];
+                    sharpening[2] -= (int)r_data.data[m];
+                }
+            }
+            sharpening[0] += 9*((int)b_data.data[4]);
+            sharpening[1] += 9*((int)g_data.data[4]);
+            sharpening[2] += 9*((int)r_data.data[4]);
+
+            for (int m = 0; m < 3; m++) {
+                if (sharpening[m] < 0) {
+                    if (m == 0) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3] = 0;
+                    }
+                    else if (m == 1) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3 + 1] = 0;
+                    }
+                    else if (m == 2) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3 + 2] = 0;
+                    }
+                }
+                else if (sharpening[m] > 255) {
+                    if (m == 0) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3] = 255;
+                    }
+                    else if (m == 1) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3 + 1] = 255;
+                    }
+                    else if (m == 2) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3 + 2] = 255;
+                    }
+                }
+                else {
+                    if (m == 0) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3] = sharpening[m];
+                    }
+                    else if (m == 1) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3 + 1] = sharpening[m];
+                    }
+                    else if (m == 2) {
+                        sharpening_image.data[i * image.cols * 3 + j * 3 + 2] = sharpening[m];
+                    }
+                }
+            }
+            x = 0, y = 0, z = 0;
+
         }
     }
     imshow("RGB Sharpening image", sharpening_image);
@@ -378,17 +458,23 @@ Mat RGB_Sharpening(Mat image, int n) {
 
 int main() {
     Mat image, G_image;
-    image = imread("p.png");
+    image = imread("Lena.png");
     cvtColor(image, G_image, COLOR_BGR2GRAY);
     Mat G_average_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
     Mat RGB_average_image(G_image.rows, G_image.cols, CV_8UC1, Scalar(0));
     Mat filter(3, 3, CV_8UC1, Scalar(0));
     
-    int n;
+    cout << "원하는 작업을 선택해 주세요 1.3x3 Moving_Average 2.Laplapician 3.Sharpening Filter" << "\n";
+    /*int n;
     cin >> n;
+    switch (n) {
+    case 1:
+        G_Moving_average(G_image, n);
+        RGB_Moving_average(image, n);
+    }*/
     
-    G_Moving_average(G_image, n);
-    RGB_Moving_average(image, n);
+    /*G_Moving_average(G_image, n);
+    RGB_Moving_average(image, n);*/
     RGB_Laplacian(image, 1);
     G_Laplacian(G_image, 1);
     G_Sharpening(G_image, 1);
